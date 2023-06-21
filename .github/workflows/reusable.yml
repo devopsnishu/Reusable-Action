@@ -9,9 +9,9 @@ on:
       tag: 
         type: string
     secrets:
-      registry_username:
+      DOCKERHUB_USERNAME:
         required: true
-      registry_password:
+      DOCKERHUB_PASSWORD:
         required: true
 
 jobs:
@@ -27,24 +27,23 @@ jobs:
       - name: Login to the Registry
         uses: docker/login-action@v1
         with:
-          username: ${{secrets.registry_username}}
-          password: ${{secrets.registry_password}}
+          username: ${{secrets.DOCKERHUB_USERNAME}}
+          password: ${{secrets.DOCKERHUB_PASSWORD}}
       
-      - name: Set the tag
-        run: |
-          if [ -z "${{inputs.tag}}" ]
-          then
-            echo "final_tag=latest" >> $GITHUB_ENV
-          else
-            echo "final_tag=${{inputs.tag}}" >> $GITHUB_ENV
-          fi
-      
-      - name: Build and Push the Image
-        uses: docker/build-push-action@v2
+      -  
+        name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.IMAGE_NAME }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
           context: .
           push: true
-          tags: ${{secrets.registry_username}}/${{inputs.image_name}}:${{env.final_tag}}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           
           
   do-something-else:
